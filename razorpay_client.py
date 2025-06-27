@@ -24,7 +24,9 @@ def create_payment_link(name, email, contact, amount):
                 "email": True,
                 "sms": True
             },
-            "reminder_enable": True
+            "reminder_enable": True,
+            "callback_url": os.getenv("RAZORPAY_CALLBACK_URL", "https://yourdomain.com/payment/callback"),
+            "callback_method": "get"
         })
         return response
     except Exception as e:
