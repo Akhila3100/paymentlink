@@ -17,6 +17,7 @@ import hmac
 import hashlib
 import json
 import requests
+from datetime import datetime
 
 
 # Base.metadata.create_all(bind=engine) 
@@ -98,12 +99,20 @@ def create_zenoti_guest(guest_data):
         "accept": "application/json",
         "content-type": "application/json"
     }
+    print(headers)
+    print(guest_data)
     response = requests.post(ZENOTI_API_URL, headers=headers, json=guest_data)
+    print(response)
     response.raise_for_status()
     return response.json()
 
+
 @app.post("/payment", response_model=PaymentResponse)
-def generate_payment_link(payload: PaymentRequest = Body(...), db: Session = Depends(get_db_payment), current_user: str = Depends(get_current_user)):
+def generate_payment_link(
+    payload: PaymentRequest = Body(...),
+    db: Session = Depends(get_db_payment),
+    current_user: str = Depends(get_current_user)
+):
     try:
         # Save all guest fields from payload
         payment = PaymentLink(
@@ -112,53 +121,75 @@ def generate_payment_link(payload: PaymentRequest = Body(...), db: Session = Dep
             phone_number=payload.phone_number,
             amount=payload.amount,
             guest_code="",
-            payment_link="",  # Will be set after Razorpay call
-            payment_link_id="",  # Will be set after Razorpay call
+            payment_link="",
+            payment_link_id="",
             razorpay_payment_id=None,
             status="created",
             center=payload.center,
-            center_id=getattr(payload, 'center_id', None),
-            personal_info_user_name=getattr(payload, 'personal_info_user_name', None),
-            personal_info_first_name=getattr(payload, 'personal_info_first_name', None),
-            personal_info_last_name=getattr(payload, 'personal_info_last_name', None),
-            personal_info_middle_name=getattr(payload, 'personal_info_middle_name', None),
-            personal_info_email=getattr(payload, 'personal_info_email', None),
-            personal_info_mobile_country_code=getattr(payload, 'personal_info_mobile_country_code', None),
-            personal_info_mobile_number=getattr(payload, 'personal_info_mobile_number', None),
-            personal_info_work_country_code=getattr(payload, 'personal_info_work_country_code', None),
-            personal_info_work_number=getattr(payload, 'personal_info_work_number', None),
-            personal_info_home_country_code=getattr(payload, 'personal_info_home_country_code', None),
-            personal_info_home_number=getattr(payload, 'personal_info_home_number', None),
-            personal_info_gender=getattr(payload, 'personal_info_gender', None),
-            personal_info_date_of_birth=getattr(payload, 'personal_info_date_of_birth', None),
-            personal_info_is_minor=getattr(payload, 'personal_info_is_minor', None),
-            personal_info_nationality_id=getattr(payload, 'personal_info_nationality_id', None),
-            personal_info_anniversary_date=getattr(payload, 'personal_info_anniversary_date', None),
-            personal_info_lock_guest_custom_data=getattr(payload, 'personal_info_lock_guest_custom_data', None),
-            personal_info_pan=getattr(payload, 'personal_info_pan', None),
-            address_info_address_1=getattr(payload, 'address_info_address_1', None),
-            address_info_address_2=getattr(payload, 'address_info_address_2', None),
-            address_info_city=getattr(payload, 'address_info_city', None),
-            address_info_country_id=getattr(payload, 'address_info_country_id', None),
-            address_info_state_id=getattr(payload, 'address_info_state_id', None),
-            address_info_state_other=getattr(payload, 'address_info_state_other', None),
-            address_info_zip_code=getattr(payload, 'address_info_zip_code', None),
-            preferences_receive_transactional_email=getattr(payload, 'preferences_receive_transactional_email', None),
-            preferences_receive_transactional_sms=getattr(payload, 'preferences_receive_transactional_sms', None),
-            preferences_receive_marketing_email=getattr(payload, 'preferences_receive_marketing_email', None),
-            preferences_receive_marketing_sms=getattr(payload, 'preferences_receive_marketing_sms', None),
-            preferences_recieve_lp_stmt=getattr(payload, 'preferences_recieve_lp_stmt', None),
-            preferences_preferred_therapist_id=getattr(payload, 'preferences_preferred_therapist_id', None),
-            login_info_password=getattr(payload, 'login_info_password', None),
-            tags=','.join(getattr(payload, 'tags', [])) if getattr(payload, 'tags', None) else None,
-            referral_referral_source_id=getattr(payload, 'referral_referral_source_id', None),
-            referral_referred_by_id=getattr(payload, 'referral_referred_by_id', None),
-            primary_employee_id=getattr(payload, 'primary_employee_id', None)
+            center_id=payload.center_id,
+
+            # Personal Info
+            personal_info_user_name=payload.personal_info_user_name,
+            personal_info_first_name=payload.personal_info_first_name,
+            personal_info_last_name=payload.personal_info_last_name,
+            personal_info_middle_name=payload.personal_info_middle_name,
+            personal_info_email=payload.personal_info_email,
+            personal_info_mobile_country_code=payload.personal_info_mobile_country_code,
+            personal_info_mobile_number=payload.personal_info_mobile_number,
+            personal_info_work_country_code=payload.personal_info_work_country_code,
+            personal_info_work_number=payload.personal_info_work_number,
+            personal_info_home_country_code=payload.personal_info_home_country_code,
+            personal_info_home_number=payload.personal_info_home_number,
+            personal_info_gender=payload.personal_info_gender,
+
+            personal_info_date_of_birth=datetime.combine(
+                payload.personal_info_date_of_birth, datetime.min.time()
+            ) if payload.personal_info_date_of_birth else None,
+
+            personal_info_is_minor=payload.personal_info_is_minor,
+            personal_info_nationality_id=payload.personal_info_nationality_id,
+
+            personal_info_anniversary_date=datetime.combine(
+                payload.personal_info_anniversary_date, datetime.min.time()
+            ) if payload.personal_info_anniversary_date else None,
+
+            personal_info_lock_guest_custom_data=payload.personal_info_lock_guest_custom_data,
+            personal_info_pan=payload.personal_info_pan,
+
+            # Address Info
+            address_info_address_1=payload.address_info_address_1,
+            address_info_address_2=payload.address_info_address_2,
+            address_info_city=payload.address_info_city,
+            address_info_country_id=payload.address_info_country_id,
+            address_info_state_id=payload.address_info_state_id,
+            address_info_state_other=payload.address_info_state_other,
+            address_info_zip_code=payload.address_info_zip_code,
+
+            # Preferences
+            preferences_receive_transactional_email=payload.preferences_receive_transactional_email,
+            preferences_receive_transactional_sms=payload.preferences_receive_transactional_sms,
+            preferences_receive_marketing_email=payload.preferences_receive_marketing_email,
+            preferences_receive_marketing_sms=payload.preferences_receive_marketing_sms,
+            preferences_recieve_lp_stmt=payload.preferences_recieve_lp_stmt,
+            preferences_preferred_therapist_id=payload.preferences_preferred_therapist_id,
+
+            # Login Info
+            login_info_password=payload.login_info_password,
+
+            # Tags
+            tags=','.join(payload.tags) if payload.tags else None,
+
+            # Referrals
+            referral_referral_source_id=payload.referral_referral_source_id,
+            referral_referred_by_id=payload.referral_referred_by_id,
+            primary_employee_id=payload.primary_employee_id
         )
+
         db.add(payment)
         db.commit()
         db.refresh(payment)
-        # Now create the Razorpay payment link and update the record
+
+        # Now create Razorpay payment link and update
         rp_response = create_payment_link(
             payload.customer_name,
             payload.email,
@@ -168,14 +199,17 @@ def generate_payment_link(payload: PaymentRequest = Body(...), db: Session = Dep
         payment.payment_link = rp_response["short_url"]
         payment.payment_link_id = rp_response.get("id")
         payment.status = rp_response["status"]
+
         db.commit()
         db.refresh(payment)
+
         return {
             "id": payment.id,
             "payment_link": payment.payment_link,
             "status": payment.status,
             "center": payment.center
         }
+
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=502, detail=f"Failed to create payment: {str(e)}")
@@ -208,6 +242,7 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db_paymen
             raise HTTPException(status_code=400, detail="Missing payment_link_id in webhook")
 
         payment = db.query(PaymentLink).filter(PaymentLink.payment_link_id == payment_link_id).first()
+        print("Found payment:", payment)
         if payment:
             if rrn:
                 payment.razorpay_payment_id = rrn
@@ -219,16 +254,14 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db_paymen
             # If status is 'paid', call Zenoti API
             if status == 'paid':
                 guest_data = {
-                    "code": payment.guest_code,
                     "center_id": payment.center_id,
                     "personal_info": {
-                        "user_name": payment.personal_info_user_name,
                         "first_name": payment.personal_info_first_name,
                         "last_name": payment.personal_info_last_name,
                         "middle_name": payment.personal_info_middle_name,
                         "email": payment.personal_info_email,
                         "mobile_phone": {
-                            "country_code": payment.personal_info_mobile_country_code,
+                            "country_code": "IN",
                             "number": payment.personal_info_mobile_number
                         },
                         "work_phone": {
@@ -240,7 +273,7 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db_paymen
                             "number": payment.personal_info_home_number
                         },
                         "gender": payment.personal_info_gender,
-                        "date_of_birth": payment.personal_info_date_of_birth.isoformat() if payment.personal_info_date_of_birth else None,
+                        "date_of_birth": payment.personal_info_date_of_birth.isoformat() if payment.personal_info_date_of_birth else "2000-05-31T00:00:00",
                         "is_minor": payment.personal_info_is_minor,
                         "nationality_id": payment.personal_info_nationality_id,
                         "anniversary_date": payment.personal_info_anniversary_date.isoformat() if payment.personal_info_anniversary_date else None,
@@ -261,15 +294,9 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db_paymen
                         "receive_transactional_sms": payment.preferences_receive_transactional_sms,
                         "receive_marketing_email": payment.preferences_receive_marketing_email,
                         "receive_marketing_sms": payment.preferences_receive_marketing_sms,
-                        "recieve_lp_stmt": payment.preferences_recieve_lp_stmt,
-                        "preferred_therapist": {
-                            "id": payment.preferences_preferred_therapist_id,
-                            "name": None
-                        }
+                        "recieve_lp_stmt": payment.preferences_recieve_lp_stmt
                     },
-                    "login_info": {
-                        "password": payment.login_info_password
-                    },
+    
                     "tags": payment.tags.split(',') if payment.tags else [],
                     "referral": {
                         "referral_source": {
@@ -288,6 +315,7 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db_paymen
                 }
                 try:
                     zenoti_response = create_zenoti_guest(guest_data)
+                    print("Zenoti response:", zenoti_response)
                     guest_code = zenoti_response.get("code")
                     if guest_code:
                         payment.guest_code = guest_code

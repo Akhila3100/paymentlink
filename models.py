@@ -57,10 +57,7 @@ class PaymentLink(Base):
     referral_referred_by_id = Column(String, nullable=True)
     primary_employee_id = Column(String, nullable=True)
 
-from sqlalchemy import Column, Integer, String, DateTime
-from database import Base
-from datetime import datetime
-from sqlalchemy.sql import func
+
 
 class User(Base):
     __tablename__ = "users"
