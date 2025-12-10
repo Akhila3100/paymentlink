@@ -202,7 +202,7 @@ def generate_payment_link(
 
         db.commit()
         db.refresh(payment)
-
+        
         return {
             "id": payment.id,
             "payment_link": payment.payment_link,

@@ -9,14 +9,14 @@ load_dotenv()
 
 # SQL Server DB configs
 DB_CONFIG_PAYMENT = {
-    'server': '183.82.126.21',
+    'server': '111.93.26.122',
     'database': 'payment',
     'username': 'sa',
     'password': 'Oliva@9876'
 }
 
 DB_CONFIG_OLIVA = {
-    'server': '183.82.126.21',
+    'server': '111.93.26.122',
     'database': 'Oliva',
     'username': 'sa',
     'password': 'Oliva@9876'
